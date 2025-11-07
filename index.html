@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simple Pomodoro</title>
+  <style>
+    :root{
+      --bg:#0b1020; --panel:#121933; --accent:#5eead4; --accent-2:#93c5fd;
+      --text:#e6eef9; --muted:#9fb0d0; --danger:#ef4444; --ok:#22c55e;
+      --shadow:0 12px 34px rgba(0,0,0,.35); --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+      background: radial-gradient(1200px 600px at 10% 10%, #0e1a3a 0%, var(--bg) 45%),
+                  radial-gradient(800px 500px at 90% 10%, #10264e 0%, transparent 60%),
+                  radial-gradient(900px 600px at 50% 110%, #0e1a3a 0%, transparent 60%), var(--bg);
+      color:var(--text); display:grid; place-items:center; padding:24px;
+    }
+    .app{
+      width:min(860px, 96vw); background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)) , var(--panel);
+      border:1px solid rgba(255,255,255,.08); box-shadow:var(--shadow); border-radius:var(--radius);
+      padding:22px; position:relative; overflow:hidden;
+    }
+    header{display:flex; align-items:center; justify-content:space-between; gap:12px;}
+    .brand{display:flex; align-items:center; gap:12px; font-weight:700; letter-spacing:.3px}
+    .dot{width:12px;height:12px;border-radius:50%;background:var(--accent); box-shadow:0 0 18px var(--accent)}
+    .muted{color:var(--muted)}
+
+    .timer{ margin:22px 0 14px; display:grid; grid-template-columns: 1fr auto; align-items:center; gap:14px; }
+    .face{
+      display:grid; place-items:center; aspect-ratio:1/1; width:min(360px, 70vw);
+      margin:0 auto; border-radius:50%; position:relative;
+      background: conic-gradient(var(--accent) var(--deg, 0deg), rgba(255,255,255,.06) 0);
+      padding:16px; transition:background .4s ease;
+    }
+    .face-inner{
+      width:100%; height:100%; border-radius:50%; background:rgba(0,0,0,.35);
+      display:grid; place-items:center; border:1px solid rgba(255,255,255,.08);
+    }
+    .time{ font-size:clamp(44px, 9vw, 72px); font-weight:800; letter-spacing:1px }
+    .mode{ text-align:center; margin-top:6px; font-size:14px; letter-spacing:.6px }
+
+    .controls{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:14px 0 4px }
+    button, .seg input, .seg select{
+      background:#0f1835; color:var(--text); border:1px solid rgba(255,255,255,.12);
+      border-radius:12px; padding:10px 14px; font:inherit; cursor:pointer; transition:.2s ease; min-width:88px;
+    }
+    button:hover{ transform:translateY(-1px); box-shadow:0 8px 18px rgba(0,0,0,.25) }
+    button.primary{ background:linear-gradient(180deg, rgba(94,234,212,.2), rgba(94,234,212,.05)); border-color: rgba(94,234,212,.4) }
+    button.warn{ background:linear-gradient(180deg, rgba(239,68,68,.2), rgba(239,68,68,.05)); border-color: rgba(239,68,68,.35) }
+
+    .settings{ display:grid; grid-template-columns: repeat(3,minmax(120px,1fr)); gap:10px; margin-top:12px }
+    .seg{ display:grid; gap:6px }
+    .seg label{ font-size:12px; color:var(--muted) }
+    .seg input, .seg select{ text-align:center }
+
+    .footer{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:16px; flex-wrap:wrap }
+    .pill{ font-size:12px; padding:6px 10px; border-radius:999px; background:#0f1835; border:1px solid rgba(255,255,255,.12) }
+    .credit{ font-size:12px; color:var(--muted); text-align:center; margin-top:12px }
+
+    @media (max-width:560px){ .settings{ grid-template-columns: 1fr 1fr } }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header>
+      <div class="brand"><span class="dot"></span> Simple Pomodoro</div>
+      <div class="muted">Stay focused. Take breaks.</div>
+    </header>
+
+    <section class="timer">
+      <div class="face" id="face" aria-live="polite" aria-atomic="true">
+        <div class="face-inner">
+          <div>
+            <div class="time" id="time">25:00</div>
+            <div class="mode" id="mode">FOCUS</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="controls">
+          <button id="startPause" class="primary" aria-label="Start or pause (Space)">Start</button>
+          <button id="reset" aria-label="Reset (R)">Reset</button>
+          <button id="skip" aria-label="Skip to next (N)">Skip</button>
+        </div>
+        <div class="settings">
+          <div class="seg">
+            <label for="focusMins">Focus (min)</label>
+            <input id="focusMins" type="number" min="1" max="180" value="25" />
+          </div>
+          <div class="seg">
+            <label for="breakMins">Break (min)</label>
+            <input id="breakMins" type="number" min="1" max="60" value="5" />
+          </div>
+          <div class="seg">
+            <label for="autoNext">Auto start next</label>
+            <select id="autoNext">
+              <option value="on">On</option>
+              <option value="off" selected>Off</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">
+      <div class="pill" id="roundInfo">Round 1</div>
+      <div class="muted">Shortcuts: Space = Start/Pause, R = Reset, N = Skip</div>
+    </div>
+
+    <div class="credit">Built by Charan Kumar Kakarla © 2025</div>
+  </div>
+
+  <script>
+    (function(){
+      const timeEl = document.getElementById('time');
+      const modeEl = document.getElementById('mode');
+      const faceEl = document.getElementById('face');
+      const startPauseBtn = document.getElementById('startPause');
+      const resetBtn = document.getElementById('reset');
+      const skipBtn = document.getElementById('skip');
+      const focusMinsEl = document.getElementById('focusMins');
+      const breakMinsEl = document.getElementById('breakMins');
+      const autoNextEl = document.getElementById('autoNext');
+      const roundInfo = document.getElementById('roundInfo');
+
+      const saved = JSON.parse(localStorage.getItem('pomodoro-settings')||'{}');
+      if(saved.focus) focusMinsEl.value = saved.focus;
+      if(saved.break) breakMinsEl.value = saved.break;
+      if(saved.autoNext) autoNextEl.value = saved.autoNext;
+
+      let mode = 'focus';
+      let remaining = (+focusMinsEl.value) * 60;
+      let duration = remaining;
+      let timer = null;
+      let round = 1;
+
+      function fmt(secs){
+        const m = Math.floor(secs/60).toString().padStart(2,'0');
+        const s = Math.floor(secs%60).toString().padStart(2,'0');
+        return `${m}:${s}`;
+      }
+
+      function setDeg(){
+        const pct = 1 - (remaining / duration);
+        const deg = Math.max(0, Math.min(360, pct*360));
+        faceEl.style.setProperty('--deg', deg+'deg');
+        faceEl.style.background = `conic-gradient(${mode==='focus'?'var(--accent)':'var(--accent-2)'} ${deg}deg, rgba(255,255,255,.06) 0)`;
+        document.title = `${fmt(remaining)} · ${mode==='focus'?'Focus':'Break'} – Pomodoro`;
+      }
+
+      function render(){
+        timeEl.textContent = fmt(remaining);
+        modeEl.textContent = (mode==='focus'?'FOCUS':'BREAK');
+        roundInfo.textContent = `Round ${round}`;
+        setDeg();
+      }
+
+      function saveSettings(){
+        localStorage.setItem('pomodoro-settings', JSON.stringify({
+          focus: +focusMinsEl.value,
+          break: +breakMinsEl.value,
+          autoNext: autoNextEl.value
+        }));
+      }
+
+      function beep(){
+        try{
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.type = 'sine';
+          o.frequency.value = 880;
+          o.connect(g); g.connect(ctx.destination);
+          g.gain.setValueAtTime(0.0001, ctx.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.1, ctx.currentTime + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
+          o.start(); o.stop(ctx.currentTime + 0.45);
+        }catch(e){}
+      }
+
+      function switchMode(next){
+        if(next) mode = next; else mode = (mode==='focus'?'break':'focus');
+        duration = (mode==='focus'? +focusMinsEl.value : +breakMinsEl.value) * 60;
+        remaining = duration;
+        if(mode==='focus') round++;
+        render();
+        beep();
+        if(autoNextEl.value==='on') start();
+      }
+
+      function tick(){
+        remaining -= 1; render();
+        if(remaining <= 0){ stop(); switchMode(); }
+      }
+
+      function start(){
+        if(timer) return;
+        timer = setInterval(tick, 1000);
+        startPauseBtn.textContent = 'Pause';
+        startPauseBtn.classList.add('primary');
+      }
+
+      function stop(){
+        if(timer){ clearInterval(timer); timer = null; }
+        startPauseBtn.textContent = 'Start';
+      }
+
+      function reset(){
+        stop();
+        mode = 'focus';
+        round = 1;
+        duration = (+focusMinsEl.value) * 60;
+        remaining = duration;
+        render();
+      }
+
+      startPauseBtn.addEventListener('click', ()=> timer? stop() : start());
+      resetBtn.addEventListener('click', reset);
+      skipBtn.addEventListener('click', ()=>{ stop(); switchMode(); });
+
+      [focusMinsEl, breakMinsEl, autoNextEl].forEach(el=>{
+        el.addEventListener('change', ()=>{ saveSettings(); if(!timer){
+          duration = (mode==='focus'? +focusMinsEl.value : +breakMinsEl.value) * 60;
+          remaining = Math.min(remaining, duration);
+          render();
+        }});
+      });
+
+      window.addEventListener('keydown', (e)=>{
+        if(e.code === 'Space'){ e.preventDefault(); timer? stop(): start(); }
+        if(e.key.toLowerCase() === 'r'){ reset(); }
+        if(e.key.toLowerCase() === 'n'){ stop(); switchMode(); }
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>
