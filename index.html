@@ -3,27 +3,37 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#040b16" />
   <title>Simple Pomodoro</title>
   <style>
     :root{
-      --bg:#0b1020; --panel:#121933; --accent:#5eead4; --accent-2:#93c5fd;
-      --text:#e6eef9; --muted:#9fb0d0; --danger:#ef4444; --ok:#22c55e;
-      --shadow:0 12px 34px rgba(0,0,0,.35); --radius:18px;
+      --bg:#040b16; --bg-a:#08142c; --bg-b:#0b203b; --panel:#0e1a36;
+      --accent:#40e0d0; --accent-2:#7dd3fc;
+      --text:#e8f3ff; --muted:#9bb4ce; --danger:#ef4444; --ok:#22c55e;
+      --shadow:0 14px 36px rgba(0,0,0,.45); --radius:18px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Ubuntu,"Helvetica Neue",Arial,sans-serif;
-      background: radial-gradient(1200px 600px at 10% 10%, #0e1a3a 0%, var(--bg) 45%),
-                  radial-gradient(800px 500px at 90% 10%, #10264e 0%, transparent 60%),
-                  radial-gradient(900px 600px at 50% 110%, #0e1a3a 0%, transparent 60%), var(--bg);
+      background:
+        radial-gradient(1200px 600px at 10% 10%, var(--bg-a) 0%, transparent 55%),
+        radial-gradient(900px 600px at 85% 15%, var(--bg-b) 0%, transparent 60%),
+        radial-gradient(1000px 640px at 50% 110%, #0a1632 0%, transparent 60%),
+        var(--bg);
+      background-attachment: fixed;
       color:var(--text); display:grid; place-items:center; padding:24px;
+      transition:background 0.6s ease-in-out;
     }
     .app{
-      width:min(860px, 96vw); background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)) , var(--panel);
+      width:min(860px, 96vw);
+      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)), var(--panel);
       border:1px solid rgba(255,255,255,.08); box-shadow:var(--shadow); border-radius:var(--radius);
       padding:22px; position:relative; overflow:hidden;
+      animation: fadeIn 1s ease;
     }
+    @keyframes fadeIn { from { opacity:0; transform:scale(.98); } to { opacity:1; transform:scale(1); } }
+
     header{display:flex; align-items:center; justify-content:space-between; gap:12px;}
     .brand{display:flex; align-items:center; gap:12px; font-weight:700; letter-spacing:.3px}
     .dot{width:12px;height:12px;border-radius:50%;background:var(--accent); box-shadow:0 0 18px var(--accent)}
@@ -34,37 +44,44 @@
       display:grid; place-items:center; aspect-ratio:1/1; width:min(360px, 70vw);
       margin:0 auto; border-radius:50%; position:relative;
       background: conic-gradient(var(--accent) var(--deg, 0deg), rgba(255,255,255,.06) 0);
-      padding:16px; transition:background .4s ease;
+      padding:16px; transition:background .4s ease, transform .2s ease;
     }
     .face-inner{
       width:100%; height:100%; border-radius:50%; background:rgba(0,0,0,.35);
       display:grid; place-items:center; border:1px solid rgba(255,255,255,.08);
+      box-shadow:inset 0 0 25px rgba(64,224,208,.08);
     }
     .time{ font-size:clamp(44px, 9vw, 72px); font-weight:800; letter-spacing:1px }
     .mode{ text-align:center; margin-top:6px; font-size:14px; letter-spacing:.6px }
 
     .controls{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:14px 0 4px }
     button, .seg input, .seg select{
-      background:#0f1835; color:var(--text); border:1px solid rgba(255,255,255,.12);
+      background:#111d3b; color:var(--text); border:1px solid rgba(255,255,255,.12);
       border-radius:12px; padding:10px 14px; font:inherit; cursor:pointer; transition:.2s ease; min-width:88px;
     }
     button:hover{ transform:translateY(-1px); box-shadow:0 8px 18px rgba(0,0,0,.25) }
-    button.primary{ background:linear-gradient(180deg, rgba(94,234,212,.2), rgba(94,234,212,.05)); border-color: rgba(94,234,212,.4) }
-    button.warn{ background:linear-gradient(180deg, rgba(239,68,68,.2), rgba(239,68,68,.05)); border-color: rgba(239,68,68,.35) }
+    button.primary{ background:linear-gradient(180deg, rgba(64,224,208,.25), rgba(64,224,208,.05)); border-color: rgba(94,234,212,.4) }
 
-    .settings{ display:grid; grid-template-columns: repeat(3,minmax(120px,1fr)); gap:10px; margin-top:12px }
+    .settings{ display:grid; grid-template-columns: repeat(4,minmax(120px,1fr)); gap:10px; margin-top:12px }
     .seg{ display:grid; gap:6px }
     .seg label{ font-size:12px; color:var(--muted) }
-    .seg input, .seg select{ text-align:center }
+    .seg input, .seg select{ text-align:center; border-radius:8px; }
 
     .footer{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:16px; flex-wrap:wrap }
     .pill{ font-size:12px; padding:6px 10px; border-radius:999px; background:#0f1835; border:1px solid rgba(255,255,255,.12) }
     .credit{ font-size:12px; color:var(--muted); text-align:center; margin-top:12px }
 
-    @media (max-width:560px){ .settings{ grid-template-columns: 1fr 1fr } }
+    /* Hide shortcuts on small screens */
+    @media (max-width: 820px){
+      .shortcuts{ display:none !important; }
+    }
+    /* Also hide on touch devices even if wide (e.g., tablets in landscape) */
+    @media (hover: none), (pointer: coarse){
+      .shortcuts{ display:none !important; }
+    }
 
-    /* ===== Mobile tweaks ===== */
-    @media (max-width: 720px){
+    /* Mobile layout tweaks (unchanged) */
+    @media (max-width:720px){
       body{ padding:16px; }
       .app{ width:100%; padding:16px; }
       header{ flex-direction:column; align-items:flex-start; gap:6px; }
@@ -75,12 +92,6 @@
       .settings{ grid-template-columns: 1fr 1fr; }
       .footer{ flex-direction:column; align-items:flex-start; gap:8px; }
       .credit{ margin-top:16px; text-align:left; }
-    }
-
-    @media (max-width: 380px){
-      .time{ font-size:clamp(40px, 12vw, 60px); }
-      .seg label{ font-size:11px; }
-      .seg input, .seg select{ padding:10px; }
     }
   </style>
 </head>
@@ -105,6 +116,7 @@
           <button id="startPause" class="primary" aria-label="Start or pause (Space)">Start</button>
           <button id="reset" aria-label="Reset (R)">Reset</button>
           <button id="skip" aria-label="Skip to next (N)">Skip</button>
+          <button id="enableNotif" aria-label="Enable notifications">Enable Notifications</button>
         </div>
         <div class="settings">
           <div class="seg">
@@ -122,13 +134,21 @@
               <option value="off" selected>Off</option>
             </select>
           </div>
+          <div class="seg">
+            <label for="alertStyle">Alert style</label>
+            <select id="alertStyle">
+              <option value="beep">Beep</option>
+              <option value="chime" selected>Chime</option>
+              <option value="silent">Silent</option>
+            </select>
+          </div>
         </div>
       </div>
     </section>
 
     <div class="footer">
       <div class="pill" id="roundInfo">Round 1</div>
-      <div class="muted">Shortcuts: Space = Start/Pause, R = Reset, N = Skip</div>
+      <div class="muted shortcuts">Shortcuts: Space = Start/Pause, R = Reset, N = Skip</div>
     </div>
 
     <div class="credit">Built by Charan Kumar Kakarla © 2025</div>
@@ -145,25 +165,38 @@
       const focusMinsEl = document.getElementById('focusMins');
       const breakMinsEl = document.getElementById('breakMins');
       const autoNextEl = document.getElementById('autoNext');
+      const alertStyleEl = document.getElementById('alertStyle');
       const roundInfo = document.getElementById('roundInfo');
+      const enableNotifBtn = document.getElementById('enableNotif');
 
+      // JS fallback: hide shortcuts if touch device (covers some Android tablets, desktop touch, etc.)
+      const isTouch = (('ontouchstart' in window) || navigator.maxTouchPoints > 0 || window.matchMedia('(hover: none), (pointer: coarse)').matches);
+      if(isTouch){
+        document.querySelectorAll('.shortcuts').forEach(el => el.style.display = 'none');
+      }
+
+      // restore settings
       const saved = JSON.parse(localStorage.getItem('pomodoro-settings')||'{}');
       if(saved.focus) focusMinsEl.value = saved.focus;
       if(saved.break) breakMinsEl.value = saved.break;
       if(saved.autoNext) autoNextEl.value = saved.autoNext;
+      if(saved.alertStyle) alertStyleEl.value = saved.alertStyle;
+
+      const notifKey = 'pomodoro-notif';
+      let notifEnabled = localStorage.getItem(notifKey) === '1';
 
       let mode = 'focus';
       let remaining = (+focusMinsEl.value) * 60;
       let duration = remaining;
       let timer = null;
       let round = 1;
+      let halfAlertFired = false;
 
       function fmt(secs){
         const m = Math.floor(secs/60).toString().padStart(2,'0');
         const s = Math.floor(secs%60).toString().padStart(2,'0');
         return `${m}:${s}`;
       }
-
       function setDeg(){
         const pct = 1 - (remaining / duration);
         const deg = Math.max(0, Math.min(360, pct*360));
@@ -171,62 +204,170 @@
         faceEl.style.background = `conic-gradient(${mode==='focus'?'var(--accent)':'var(--accent-2)'} ${deg}deg, rgba(255,255,255,.06) 0)`;
         document.title = `${fmt(remaining)} · ${mode==='focus'?'Focus':'Break'} – Pomodoro`;
       }
-
       function render(){
         timeEl.textContent = fmt(remaining);
         modeEl.textContent = (mode==='focus'?'FOCUS':'BREAK');
         roundInfo.textContent = `Round ${round}`;
         setDeg();
       }
-
       function saveSettings(){
         localStorage.setItem('pomodoro-settings', JSON.stringify({
           focus: +focusMinsEl.value,
           break: +breakMinsEl.value,
-          autoNext: autoNextEl.value
+          autoNext: autoNextEl.value,
+          alertStyle: alertStyleEl.value
         }));
       }
 
-      function beep(){
+      // ===== Audio (big + normal) =====
+      let _ctx = null;
+      function getCtx(){
+        if(!_ctx){
+          _ctx = new (window.AudioContext||window.webkitAudioContext)();
+        }
+        if(_ctx.state === 'suspended'){ _ctx.resume(); }
+        return _ctx;
+      }
+      function playBeep(intensity='normal'){
+        if(alertStyleEl.value==='silent') return;
         try{
-          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const ctx = getCtx();
           const o = ctx.createOscillator();
           const g = ctx.createGain();
-          o.type = 'sine';
-          o.frequency.value = 880;
+          o.type = 'square';
+          o.frequency.value = intensity==='big' ? 520 : 880;
           o.connect(g); g.connect(ctx.destination);
+          const peak = intensity==='big' ? 0.35 : 0.12;
+          const dur  = intensity==='big' ? 0.6  : 0.45;
           g.gain.setValueAtTime(0.0001, ctx.currentTime);
-          g.gain.exponentialRampToValueAtTime(0.1, ctx.currentTime + 0.02);
-          g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
-          o.start(); o.stop(ctx.currentTime + 0.45);
+          g.gain.exponentialRampToValueAtTime(peak, ctx.currentTime + 0.03);
+          g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+          o.start(); o.stop(ctx.currentTime + dur + 0.02);
         }catch(e){}
+      }
+      function playChime(intensity='normal'){
+        if(alertStyleEl.value==='silent') return;
+        try{
+          const ctx = getCtx();
+          const base = intensity==='big' ? [392, 523.25, 659.25, 784] : [523.25, 659.25, 783.99];
+          let t = ctx.currentTime;
+          base.forEach((f,i)=>{
+            const o = ctx.createOscillator();
+            o.type = 'sine';
+            o.frequency.setValueAtTime(f, t);
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(intensity==='big' ? 0.5 : 0.18, t + 0.04);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + (intensity==='big' ? 0.6 : 0.35));
+            o.connect(g); g.connect(ctx.destination);
+            o.start(t);
+            o.stop(t + (intensity==='big' ? 0.62 : 0.37));
+            t += (intensity==='big' ? 0.14 : 0.12);
+          });
+        }catch(e){}
+      }
+      function alertSound(intensity='normal'){
+        if(alertStyleEl.value==='beep') playBeep(intensity);
+        else playChime(intensity);
+      }
+
+      // ===== Vibration =====
+      function vibrate(pattern){
+        if(navigator.vibrate) navigator.vibrate(pattern);
+      }
+      const VIBE_BIG = [400,120,400,120,400,200,320];
+
+      // ===== Notifications =====
+      function canNotify(){ return 'Notification' in window && Notification.permission==='granted'; }
+      function requestNotify(){
+        if(!('Notification' in window)) return alert('Notifications not supported on this browser.');
+        Notification.requestPermission().then(p=>{
+          if(p==='granted'){ notifEnabled = true; localStorage.setItem(notifKey,'1'); toast('Notifications enabled'); }
+          else { notifEnabled = false; localStorage.removeItem(notifKey); toast('Notifications blocked'); }
+          renderNotifBtn();
+        });
+      }
+      function notify(title, body){
+        if(!notifEnabled || !canNotify()) return;
+        try{
+          const n = new Notification(title, {
+            body,
+            icon: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect width="100%" height="100%" rx="24" ry="24" fill="%230b1e3a"/><circle cx="64" cy="64" r="40" fill="%2340e0d0"/></svg>`),
+            requireInteraction: false,
+            silent: true
+          });
+          n.onclick = ()=> window.focus();
+        }catch(e){}
+      }
+      function renderNotifBtn(){
+        enableNotifBtn.textContent = (notifEnabled && canNotify()) ? 'Notifications On' : 'Enable Notifications';
+        enableNotifBtn.classList.toggle('primary', notifEnabled && canNotify());
+      }
+
+      // tiny toast
+      function toast(msg){
+        const el = document.createElement('div');
+        el.textContent = msg;
+        el.style.cssText = `
+          position:fixed; left:50%; transform:translate(-50%,0);
+          bottom:24px; background:#0f1835; color:var(--text);
+          border:1px solid rgba(255,255,255,.12); padding:10px 14px;
+          border-radius:12px; box-shadow:${getComputedStyle(document.documentElement).getPropertyValue('--shadow')}; z-index:9999;
+          opacity:0; transition:opacity .2s, transform .2s;
+        `;
+        document.body.appendChild(el);
+        requestAnimationFrame(()=>{ el.style.opacity='1'; el.style.transform='translate(-50%,-6px)'; });
+        setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translate(-50%,0)'; setTimeout(()=>el.remove(), 200); }, 1800);
       }
 
       function switchMode(next){
-        if(next) mode = next; else mode = (mode==='focus'?'break':'focus');
+        mode = next ? next : (mode==='focus'?'break':'focus');
         duration = (mode==='focus'? +focusMinsEl.value : +breakMinsEl.value) * 60;
         remaining = duration;
+        halfAlertFired = false;
         if(mode==='focus') round++;
         render();
-        beep();
+
+        // BIG alert at mode change
+        alertSound('big');
+        vibrate(VIBE_BIG);
+        notify(mode==='focus' ? 'Focus time started' : 'Break started',
+               mode==='focus' ? 'Let’s get back to deep work.' : 'Time to relax for a bit.');
+
         if(autoNextEl.value==='on') start();
       }
 
       function tick(){
-        remaining -= 1; render();
+        remaining -= 1;
+        if(!halfAlertFired && remaining === Math.floor(duration/2)){
+          halfAlertFired = true;
+          alertSound('big');
+          vibrate(VIBE_BIG);
+          notify('Halfway ' + (mode==='focus'?'through focus':'through break'), 'You’re doing great!');
+        }
+        render();
         if(remaining <= 0){ stop(); switchMode(); }
       }
 
       function start(){
         if(timer) return;
+        if(remaining === duration){
+          alertSound('big');
+          vibrate(VIBE_BIG);
+          notify(mode==='focus' ? 'Focus started' : 'Break started', mode==='focus' ? 'Crush this session!' : 'Breathe and stretch.');
+        }
+        try{ getCtx(); }catch(e){}
         timer = setInterval(tick, 1000);
         startPauseBtn.textContent = 'Pause';
         startPauseBtn.classList.add('primary');
+        faceEl.style.transform = 'scale(1.01)';
       }
 
       function stop(){
         if(timer){ clearInterval(timer); timer = null; }
         startPauseBtn.textContent = 'Start';
+        startPauseBtn.classList.remove('primary');
+        faceEl.style.transform = 'scale(1.0)';
       }
 
       function reset(){
@@ -235,19 +376,36 @@
         round = 1;
         duration = (+focusMinsEl.value) * 60;
         remaining = duration;
+        halfAlertFired = false;
         render();
+        toast('Timer reset');
       }
 
       startPauseBtn.addEventListener('click', ()=> timer? stop() : start());
       resetBtn.addEventListener('click', reset);
       skipBtn.addEventListener('click', ()=>{ stop(); switchMode(); });
+      enableNotifBtn.addEventListener('click', ()=>{
+        if(!('Notification' in window)) { toast('Notifications not supported'); return; }
+        if(Notification.permission === 'granted'){
+          notifEnabled = !notifEnabled;
+          if(notifEnabled) localStorage.setItem(notifKey,'1'); else localStorage.removeItem(notifKey);
+          renderNotifBtn();
+          toast(notifEnabled ? 'Notifications enabled' : 'Notifications disabled');
+        } else {
+          requestNotify();
+        }
+      });
 
-      [focusMinsEl, breakMinsEl, autoNextEl].forEach(el=>{
-        el.addEventListener('change', ()=>{ saveSettings(); if(!timer){
-          duration = (mode==='focus'? +focusMinsEl.value : +breakMinsEl.value) * 60;
-          remaining = Math.min(remaining, duration);
-          render();
-        }});
+      [focusMinsEl, breakMinsEl, autoNextEl, alertStyleEl].forEach(el=>{
+        el.addEventListener('change', ()=>{ 
+          saveSettings(); 
+          if(!timer){
+            duration = (mode==='focus'? +focusMinsEl.value : +breakMinsEl.value) * 60;
+            remaining = Math.min(remaining, duration);
+            halfAlertFired = false;
+            render();
+          }
+        });
       });
 
       window.addEventListener('keydown', (e)=>{
@@ -256,7 +414,11 @@
         if(e.key.toLowerCase() === 'n'){ stop(); switchMode(); }
       });
 
+      if(('Notification' in window) && Notification.permission==='granted' && localStorage.getItem(notifKey)==='1'){
+        notifEnabled = true;
+      }
       render();
+      renderNotifBtn();
     })();
   </script>
 </body>
